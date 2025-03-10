@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Code Generator Notepad</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            width: 80%;
+            margin: auto;
+            padding: 20px;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-top: 50px;
+        }
+        h1, h2 {
+            text-align: center;
+            color: #333;
+        }
+        textarea, input, select {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .delete-button {
+            background-color: red;
+            width: 25px;
+            height: 25px;
+            font-size: 12px;
+            float: right;
+            padding: 2px;
+            text-align: center;
+        }
+        .code-preview {
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 14px;
+            white-space: pre-wrap;
+            margin-top: 10px;
+        }
+        .code-section {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Main Menu -->
+    <div class="container" id="mainMenu">
+        <h1>AI Code Generator Notepad</h1>
+        <div id="projectList"></div>
+        <button onclick="openCreateNew()">Create New</button>
+        <button onclick="openAI()">Use AI</button>
+    </div>
+
+    <!-- Notepad Section -->
+    <div class="container" id="notepad" style="display:none;">
+        <h2>Write Your Notes</h2>
+        <textarea id="noteContent" placeholder="Write your notes here..." rows="15"></textarea><br>
+        <input type="text" id="projectName" placeholder="Enter Project Name" required>
+        <select id="downloadFormat">
+            <option value="txt">Download as TXT</option>
+            <option value="html">Download as HTML</option>
+            <option value="css">Download as CSS</option>
+            <option value="js">Download as JS</option>
+        </select>
+        <button onclick="saveNote()">Save</button>
+        <button onclick="downloadNote()">Download</button>
+        <button onclick="fixCode()">Fix</button>
+        <button onclick="goBack()">Back</button>
+    </div>
+
+    <!-- AI Code Generation Section -->
+    <div class="container" id="aiSection" style="display:none;">
+        <h2>AI Code Generator</h2>
+        <textarea id="aiPrompt" placeholder="Enter prompt for website code..."></textarea><br>
+        <button onclick="generateCode()">Generate Code</button>
+        <div id="generatedCodeSection" class="code-section">
+            <h3>Generated Code Preview</h3>
+            <button onclick="toggleCode()">Show Code</button>
+            <pre id="codePreview" class="code-preview" style="display: none;"></pre>
+            <button onclick="copyCode()">Copy Code</button>
+            <button onclick="fixBugs()">Bug Fix</button>
+            <button onclick="downloadAIProject()">Download ZIP</button>
+        </div>
+        <button onclick="goBack()">Back</button>
+    </div>
+
+    <script>
+        function openCreateNew() {
+            document.getElementById("mainMenu").style.display = "none";
+            document.getElementById("notepad").style.display = "block";
+            document.getElementById("noteContent").value = '';  
+            document.getElementById("projectName").value = '';  
+        }
+
+        function openAI() {
+            document.getElementById("mainMenu").style.display = "none";
+            document.getElementById("aiSection").style.display = "block";
+        }
+
+        function goBack() {
+            document.getElementById("mainMenu").style.display = "block";
+            document.getElementById("notepad").style.display = "none";
+            document.getElementById("aiSection").style.display = "none";
+        }
+
+        function saveNote() {
+            const projectName = document.getElementById("projectName").value;
+            const noteContent = document.getElementById("noteContent").value;
+            if (!projectName) {
+                alert("Project name is required!");
+                return;
+            }
+            localStorage.setItem(projectName, noteContent);
+            alert("Note saved successfully!");
+            goBack();
+            updateProjectList();
+        }
+
+        function updateProjectList() {
+            const projectListDiv = document.getElementById("projectList");
+            projectListDiv.innerHTML = '';
+
+            const savedProjects = Object.keys(localStorage);
+            savedProjects.forEach(projectName => {
+                const projectBar = document.createElement("div");
+                projectBar.innerHTML = `
+                    <span onclick="openProject('${projectName}')">📂 ${projectName}</span>
+                    <button class="delete-button" onclick="deleteProject('${projectName}')">X</button>
+                `;
+                projectListDiv.appendChild(projectBar);
+            });
+        }
+
+        function openProject(projectName) {
+            document.getElementById("noteContent").value = localStorage.getItem(projectName);
+            document.getElementById("projectName").value = projectName;
+            openCreateNew();
+        }
+
+        function deleteProject(projectName) {
+            localStorage.removeItem(projectName);
+            updateProjectList();
+        }
+
+        function generateCode() {
+            const prompt = document.getElementById("aiPrompt").value;
+            if (!prompt) {
+                alert("Please enter a prompt!");
+                return;
+            }
+
+            const generatedCode = `<!DOCTYPE html>
+<html>
+<head>
+    <title>${prompt}</title>
+</head>
+<body>
+    <h1>${prompt}</h1>
+</body>
+</html>`;
+            document.getElementById("codePreview").textContent = generatedCode;
+            document.getElementById("generatedCodeSection").style.display = "block";
+        }
+
+        function copyCode() {
+            navigator.clipboard.writeText(document.getElementById("codePreview").textContent);
+            alert("Code copied!");
+        }
+
+        function toggleCode() {
+            const codePreview = document.getElementById("codePreview");
+            codePreview.style.display = (codePreview.style.display === "none") ? "block" : "none";
+        }
+
+        function fixBugs() {
+            let code = document.getElementById("codePreview").textContent;
+            code = code.replace(/<script>/gi, "&lt;script&gt;");  
+            document.getElementById("codePreview").textContent = code;
+            alert("Bug Fix Applied!");
+        }
+
+        function downloadAIProject() {
+            const zip = new JSZip();
+            zip.file("index.html", document.getElementById("codePreview").textContent);
+            zip.file("style.css", "body { font-family: Arial; }");
+            zip.file("script.js", "console.log('Hello World');");
+
+            zip.generateAsync({ type: "blob" }).then(function (content) {
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(content);
+                link.download = "AI_Project.zip";
+                link.click();
+            });
+        }
+
+        window.onload = updateProjectList;
+    </script>
+
+</body>
+</html>
